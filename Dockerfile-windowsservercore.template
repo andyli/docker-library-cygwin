@@ -1,0 +1,26 @@
+${HEADER}
+
+FROM microsoft/windowsservercore
+
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
+
+ENV CYG_ROOT ${CYG_ROOT}
+ENV CYG_MIRROR ${CYG_MIRROR}
+
+RUN $url = 'https://cygwin.com/setup-${ARCH}.exe'; \
+	Write-Host ('Downloading {0} ...' -f $url); \
+	Invoke-WebRequest -Uri $url -OutFile 'C:/setup-${ARCH}.exe'; \
+	\
+	Write-Host 'Installing ...'; \
+	New-Item -ItemType directory -Path 'C:/tmp'; \
+	Start-Process "C:/setup-${ARCH}.exe" -NoNewWindow -Wait -PassThru -ArgumentList @('-q','-v','-n','-B','-R','${CYG_ROOT}','-l','C:/tmp','-s','${CYG_MIRROR}','-P','default'); \
+	\
+	Write-Host 'Removing ...'; \
+	Remove-Item -Path 'C:/tmp' -Force -Recurse -ErrorAction Ignore; \
+	\
+	Write-Host 'Verifying install ...'; \
+	Start-Process "${CYG_ROOT}/bin/cygcheck.exe" -NoNewWindow -Wait -PassThru -ArgumentList @('-c'); \
+	\
+	Write-Host 'Complete.';
+
+CMD ["${CYG_ROOT}/bin/bash.exe"]
